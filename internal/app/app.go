@@ -4,6 +4,7 @@ import (
 	"database/sql"
 
 	"github.com/go-redis/redis/v8"
+	_ "github.com/lib/pq"
 	"github.com/rickj1ang/fly_crypto/internal/data"
 )
 
