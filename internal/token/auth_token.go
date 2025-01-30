@@ -6,7 +6,7 @@ import (
 )
 
 // Generate creates a new random token for the given email
-func Generate(email string) (string, error) {
+func Generate() (string, error) {
 	// Generate 32 bytes of random data
 	bytes := make([]byte, 32)
 	if _, err := rand.Read(bytes); err != nil {

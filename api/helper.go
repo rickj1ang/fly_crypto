@@ -1,47 +1,34 @@
 package api
 
 import (
-	"time"
+	"fmt"
+
+	"github.com/gin-gonic/gin"
+	"github.com/rickj1ang/fly_crypto/internal/data"
 )
 
-// StoreVerificationCode stores a verification code in Redis
-func (a *App) StoreVerificationCode(email, code string) error {
-	return a.data.StoreVerificationCode(email, code)
+func GetUserIDFromContext(c *gin.Context) (int64, error) {
+	userID, exists := c.Get("user_id")
+	if !exists {
+		return 0, fmt.Errorf("user ID not found in context")
+	}
+
+	// Type assertion
+	userIDInt64, ok := userID.(int64)
+	if !ok {
+		return 0, fmt.Errorf("invalid user ID type in context")
+	}
+
+	return userIDInt64, nil
 }
 
-// StoreAuthToken stores an authentication token in Redis
-func (a *App) StoreAuthToken(token, email string) error {
-	return a.data.StoreAuthToken(token, email)
-}
-
-
-
-// GetEmailByAuthToken retrieves an email associated with an authentication token from Redis
-func (a *App) GetEmailByAuthToken(token string) (string, error) {
-	return a.data.GetEmailByAuthToken(token)
-}
-
-// DeleteVerificationCode removes a verification code from Redis
-func (a *App) DeleteVerificationCode(email string) error {
-	return a.data.DeleteVerificationCode(email)
-}
-
-// DeleteAuthToken removes an authentication token from Redis
-func (a *App) DeleteAuthToken(token string) error {
-	return a.data.DeleteAuthToken(token)
-}
-
-// StoreToken delegates to Data.StoreToken
-func (a *App) StoreToken(token, email string, expiration time.Duration) error {
-	return a.data.StoreToken(token, email, expiration)
-}
-
-// GetVerifyCodeByEmail delegates to Data.GetVerifyCodeByEmail
-func (a *App) GetVerifyCodeByEmail(token string) (string, error) {
-	return a.data.GetVerifyCodeByEmail(token)
-}
-
-// DeleteToken delegates to Data.DeleteToken
-func (a *App) DeleteToken(token string) error {
-	return a.data.DeleteToken(token)
+// GetKey generates a Redis key for storing notification in sorted set
+func GetKey(notification *data.Notification) string {
+	var direction string
+	if notification.IsAbove {
+		direction = "above"
+	} else {
+		direction = "below"
+	}
+	return fmt.Sprintf("%s:%s", notification.CoinSymbol, direction)
 }

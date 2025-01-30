@@ -5,10 +5,11 @@ import (
 	"strings"
 
 	"github.com/gin-gonic/gin"
+	"github.com/rickj1ang/fly_crypto/internal/app"
 )
 
 // AuthMiddleware verifies the bearer token in the Authorization header
-func (a *App) AuthMiddleware() gin.HandlerFunc {
+func AuthMiddleware(a *app.App) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		auth := c.GetHeader("Authorization")
 		if auth == "" {
@@ -25,14 +26,14 @@ func (a *App) AuthMiddleware() gin.HandlerFunc {
 		tokenStr := parts[1]
 
 		// Verify token exists in Redis and get associated email
-		email, err := a.GetCodeByEmail(tokenStr)
+		userID, err := a.GetUserIDByAuthToken(tokenStr)
 		if err != nil {
 			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "Invalid or expired token"})
 			return
 		}
 
-		// Set email in context for later use
-		c.Set("email", email)
+		// Set user_id in context for later use
+		c.Set("user_id", userID)
 		c.Next()
 	}
 }

@@ -2,9 +2,11 @@ package api
 
 import (
 	"net/http"
-	"time"
+
 	"github.com/gin-gonic/gin"
-	"github.com/rick/fly_crypto/internal/token"
+	"github.com/rickj1ang/fly_crypto/internal/app"
+	"github.com/rickj1ang/fly_crypto/internal/data"
+	"github.com/rickj1ang/fly_crypto/internal/token"
 )
 
 type verifyRequest struct {
@@ -12,7 +14,7 @@ type verifyRequest struct {
 	Code  string `json:"code" binding:"required"`
 }
 
-func (a *App) Verify() gin.HandlerFunc {
+func Verify(a *app.App) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		var req verifyRequest
 		if err := c.ShouldBindJSON(&req); err != nil {
@@ -20,28 +22,49 @@ func (a *App) Verify() gin.HandlerFunc {
 			return
 		}
 
-		// Get stored verification code
-		storedCode, err := a.GetVerificationCode(req.Email)
+		// Get stored verification email
+		storedEmail, err := a.GetEmailByVerifyCode(req.Code)
 		if err != nil {
 			c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid or expired verification code"})
 			return
 		}
 
-		// Verify code
-		if storedCode != req.Code {
+		// Verify email
+		if storedEmail != req.Email {
 			c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid verification code"})
 			return
 		}
 
-		// Generate JWT token
-		token, err := token.Generate(req.Email)
+		// Check if user exists in database
+		exists, err := a.Data.CheckUser(req.Email)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to check user"})
+			return
+		}
+
+		// Create user if not exists
+		var userID int64
+		if !exists {
+			user := &data.User{
+				Email:           req.Email,
+				NotificationsID: []int64{},
+			}
+			if err := a.Data.CreateUser(user); err != nil {
+				c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create user"})
+				return
+			} else {
+				userID = user.UserID
+			}
+		}
+
+		token, err := token.Generate()
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to generate token"})
 			return
 		}
 
 		// Store token in Redis with 24-hour expiration
-		if err := a.StoreAuthToken(token, req.Email); err != nil {
+		if err := a.StoreAuthToken(token, userID); err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to store token"})
 			return
 		}

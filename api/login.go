@@ -2,16 +2,18 @@ package api
 
 import (
 	"net/http"
+
 	"github.com/gin-gonic/gin"
-	"github.com/rick/fly_crypto/internal/token"
-	"github.com/rick/fly_crypto/internal/mail"
+	"github.com/rickj1ang/fly_crypto/internal/app"
+	"github.com/rickj1ang/fly_crypto/internal/mail"
+	"github.com/rickj1ang/fly_crypto/internal/token"
 )
 
 type loginRequest struct {
 	Email string `json:"email" binding:"required,email"`
 }
 
-func (a *App) Login() gin.HandlerFunc {
+func Login(a *app.App) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		var req loginRequest
 		if err := c.ShouldBindJSON(&req); err != nil {
@@ -21,9 +23,13 @@ func (a *App) Login() gin.HandlerFunc {
 
 		// Generate verification code
 		code := token.GenerateVerificationCode()
+		if code == "000000" {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to generate verification code"})
+			return
+		}
 
 		// Store verification code in Redis with 6-minute expiration
-		if err := a.StoreVerificationCode(req.Email, code); err != nil {
+		if err := a.Data.StoreVerificationCode(req.Email, code); err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to store verification code"})
 			return
 		}
