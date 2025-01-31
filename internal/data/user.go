@@ -15,8 +15,8 @@ func (d Data) CreateUser(u *User) error {
 
 	// Insert the user into the database
 	query := `
-		INSERT INTO users (email, notifications_id)
-		VALUES ($1, $2)
+		INSERT INTO users (email)
+		VALUES ($1)
 		RETURNING user_id
 	`
 
@@ -24,7 +24,6 @@ func (d Data) CreateUser(u *User) error {
 		ctx,
 		query,
 		u.Email,
-		u.NotificationsID,
 	).Scan(&u.UserID)
 
 	if err != nil {
@@ -109,4 +108,42 @@ func (d Data) GetUserEmail(userID int64) (string, error) {
 	}
 
 	return email, nil
+}
+
+// DeleteUser deletes a user and all their associated notifications from the database
+func (d Data) DeleteUser(userID int64) error {
+	ctx := context.TODO()
+
+	// Start a transaction
+	tx, err := d.Db.BeginTx(ctx, nil)
+	if err != nil {
+		return err
+	}
+
+	// First, delete all notifications associated with the user
+	deleteNotificationsQuery := `
+		DELETE FROM notifications
+		WHERE user_id = $1
+	`
+
+	_, err = tx.ExecContext(ctx, deleteNotificationsQuery, userID)
+	if err != nil {
+		tx.Rollback()
+		return err
+	}
+
+	// Then delete the user
+	deleteUserQuery := `
+		DELETE FROM users
+		WHERE user_id = $1
+	`
+
+	_, err = tx.ExecContext(ctx, deleteUserQuery, userID)
+	if err != nil {
+		tx.Rollback()
+		return err
+	}
+
+	// Commit the transaction
+	return tx.Commit()
 }

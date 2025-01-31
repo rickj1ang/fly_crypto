@@ -46,9 +46,9 @@ func (d *Data) GetUserIDByAuthToken(token string) (int64, error) {
 }
 
 // DeleteVerificationCode removes a verification code from Redis
-func (d *Data) DeleteVerificationCode(email string) error {
+func (d *Data) DeleteVerificationCode(code string) error {
 	ctx := context.Background()
-	key := fmt.Sprintf("%s%s", VerifyPrefix, email)
+	key := fmt.Sprintf("%s%s", VerifyPrefix, code)
 	return d.Redis.Del(ctx, key).Err()
 }
 
