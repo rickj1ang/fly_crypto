@@ -60,31 +60,6 @@ func (d Data) CheckUser(email string) (bool, error) {
 	return exists, nil
 }
 
-// GetUserNotificationIDs retrieves the notifications_id array for a given user
-func (d Data) GetUserNotificationIDs(userID int64) ([]int64, error) {
-	ctx := context.TODO()
-
-	// Query to get the notifications_id array for the user
-	query := `
-		SELECT notifications_id
-		FROM users
-		WHERE user_id = $1
-	`
-
-	var notificationIDs []int64
-	err := d.Db.QueryRowContext(
-		ctx,
-		query,
-		userID,
-	).Scan(&notificationIDs)
-
-	if err != nil {
-		return nil, err
-	}
-
-	return notificationIDs, nil
-}
-
 // GetUserEmail retrieves a user's email address by their user ID
 func (d Data) GetUserEmail(userID int64) (string, error) {
 	ctx := context.TODO()
@@ -146,4 +121,24 @@ func (d Data) DeleteUser(userID int64) error {
 
 	// Commit the transaction
 	return tx.Commit()
+}
+
+func (d Data) GetUserIDByEmail(email string) (int64, error) {
+	ctx := context.TODO()
+	// Query to get the user ID by email
+	query := `
+		SELECT user_id
+		FROM users
+		WHERE email = $1
+	`
+	var userID int64
+	err := d.Db.QueryRowContext(
+		ctx,
+		query,
+		email,
+	).Scan(&userID)
+	if err != nil {
+		return 0, err
+	}
+	return userID, nil
 }

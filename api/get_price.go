@@ -2,26 +2,25 @@ package api
 
 import (
 	"encoding/json"
-	"fmt"
 	"net/http"
 )
 
 const baseURL = "https://data-api.binance.vision/api/v3/ticker/price?symbol="
 
-func GetPrice(coin string) string {
+func GetPrice(coin string) (string, error) {
 	res, err := http.Get(getURL(coin))
 	if err != nil {
-		fmt.Println(err)
+		return "", err
 	}
 
 	var result map[string]interface{}
 	if err := json.NewDecoder(res.Body).Decode(&result); err != nil {
-		panic(err)
+		return "", err
 	}
 	res.Body.Close()
 
 	price := result["price"]
-	return price.(string)
+	return price.(string), nil
 }
 
 func getURL(coin string) string {

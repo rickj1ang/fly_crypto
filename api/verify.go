@@ -55,6 +55,12 @@ func Verify(a *app.App) gin.HandlerFunc {
 			} else {
 				userID = user.UserID
 			}
+		} else {
+			userID, err = a.Data.GetUserIDByEmail(req.Email)
+			if err != nil {
+				c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to get user ID"})
+				return
+			}
 		}
 
 		token, err := token.Generate()
@@ -70,7 +76,7 @@ func Verify(a *app.App) gin.HandlerFunc {
 		}
 
 		// Delete verification code after successful verification
-		_ = a.DeleteVerificationCode(req.Email)
+		_ = a.Data.DeleteVerificationCode(req.Code)
 
 		c.JSON(http.StatusOK, gin.H{"token": token})
 	}

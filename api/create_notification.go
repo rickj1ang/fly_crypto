@@ -35,7 +35,12 @@ func CreateNotification(a *app.App) gin.HandlerFunc {
 		}
 
 		// Get current price
-		currentPrice, err := strconv.ParseFloat(GetPrice(coinSymbol), 64)
+		price, err := GetPrice(coinSymbol)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to get current price"})
+			return
+		}
+		currentPrice, err := strconv.ParseFloat(price, 64)
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to get current price"})
 			return
@@ -58,12 +63,17 @@ func CreateNotification(a *app.App) gin.HandlerFunc {
 		// Save notification to the database
 		err = a.Data.CreateNotification(notification)
 		if err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create notification"})
+			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error(), "id": id})
+			return
+		}
+		email, err := a.Data.GetUserEmail(id)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to get user email"})
 			return
 		}
 
 		key := GetKey(notification)
-		if err = a.Data.StoreInSortedSet(key, req.TargetPrice, id); err != nil {
+		if err = a.Data.StoreInSortedSet(key, req.TargetPrice, email); err != nil {
 			//delete notification from db
 			if err = a.Data.DeleteNotification(notification.ID); err != nil {
 				c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to delete notification"})

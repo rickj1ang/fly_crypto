@@ -25,7 +25,7 @@ func AuthMiddleware(a *app.App) gin.HandlerFunc {
 
 		tokenStr := parts[1]
 
-		// Verify token exists in Redis and get associated email
+		// Verify token exists in Redis and get associated userID
 		userID, err := a.GetUserIDByAuthToken(tokenStr)
 		if err != nil {
 			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "Invalid or expired token"})

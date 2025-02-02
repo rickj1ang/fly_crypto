@@ -12,7 +12,7 @@ import (
 func DeleteNotification(a *app.App) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		// Get notification ID from URL parameter
-		notificationIDStr := c.Param("notification_id")
+		notificationIDStr := c.Param("id")
 		notificationID, err := strconv.ParseInt(notificationIDStr, 10, 64)
 		if err != nil {
 			c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid notification ID"})
@@ -32,22 +32,8 @@ func DeleteNotification(a *app.App) gin.HandlerFunc {
 		}
 
 		// Check if the notification belongs to the user
-		notificationIDs, err := a.Data.GetUserNotificationIDs(userID)
-		if err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to verify notification ownership"})
-			return
-		}
-
-		belongsToUser := false
-		for _, id := range notificationIDs {
-			if id == notificationID {
-				belongsToUser = true
-				break
-			}
-		}
-
-		if !belongsToUser {
-			c.JSON(http.StatusForbidden, gin.H{"error": "Notification does not belong to user"})
+		if notification.UserID != userID {
+			c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized access"})
 			return
 		}
 
