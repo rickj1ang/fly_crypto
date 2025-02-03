@@ -7,6 +7,8 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/rickj1ang/fly_crypto/api"
 	"github.com/rickj1ang/fly_crypto/internal/app"
+	"github.com/rickj1ang/fly_crypto/internal/checker"
+	"github.com/rickj1ang/fly_crypto/internal/mail"
 )
 
 func initApp() (*app.App, error) {
@@ -67,9 +69,13 @@ func main() {
 	setupAuthRoutes(r, app)
 	setupProtectedRoutes(r, app)
 
+	mailBox := make(chan mail.Message, 10)
+
+	go mail.Sender(mailBox)
+	checker.StartCheck(app, mailBox)
+
 	// Start server
-	log.Println("Server starting on :8080")
-	if err := r.Run(":8080"); err != nil {
+	if err := r.Run("localhost:8080"); err != nil {
 		log.Fatalf("Server failed to start: %v", err)
 	}
 }

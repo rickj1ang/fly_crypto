@@ -35,7 +35,7 @@ func Login(a *app.App) gin.HandlerFunc {
 		}
 
 		// Send verification code via email
-		if err := mail.Send(req.Email, code); err != nil {
+		if err := mail.SendVerifyCode(req.Email, code); err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to send verification code"})
 			return
 		}

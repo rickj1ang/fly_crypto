@@ -2,11 +2,11 @@ package api
 
 import (
 	"net/http"
-	"strconv"
 	"strings"
 
 	"github.com/gin-gonic/gin"
 	"github.com/rickj1ang/fly_crypto/internal/app"
+	baapi "github.com/rickj1ang/fly_crypto/internal/ba_api"
 	"github.com/rickj1ang/fly_crypto/internal/data"
 )
 
@@ -35,12 +35,7 @@ func CreateNotification(a *app.App) gin.HandlerFunc {
 		}
 
 		// Get current price
-		price, err := GetPrice(coinSymbol)
-		if err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to get current price"})
-			return
-		}
-		currentPrice, err := strconv.ParseFloat(price, 64)
+		currentPrice, err := baapi.GetPrice(coinSymbol)
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to get current price"})
 			return

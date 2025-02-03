@@ -99,6 +99,63 @@ func (d Data) DeleteNotification(notificationID int64) error {
 	return tx.Commit()
 }
 
+// DeleteNotificationFromMessage deletes a notification based on user email, coin symbol and price direction
+func (d Data) DeleteNotificationFromMessage(userEmail string, isAbove bool, coinSymbol string) error {
+	ctx := context.TODO()
+
+	// Start a transaction
+	tx, err := d.Db.BeginTx(ctx, nil)
+	if err != nil {
+		return err
+	}
+
+	// First get the notification ID and user ID
+	var notificationID int64
+	var userID int64
+
+	query := `
+		SELECT n.notification_id, n.user_id
+		FROM notifications n
+		JOIN users u ON n.user_id = u.user_id
+		WHERE u.email = $1 AND n.is_above = $2 AND n.coin_symbol = $3
+		LIMIT 1
+	`
+
+	err = tx.QueryRowContext(ctx, query, userEmail, isAbove, coinSymbol).Scan(&notificationID, &userID)
+	if err != nil {
+		tx.Rollback()
+		return err
+	}
+
+	// Update user's notifications array to remove this notification ID
+	updateQuery := `
+		UPDATE users
+		SET notifications_id = array_remove(notifications_id, $1)
+		WHERE user_id = $2
+	`
+
+	_, err = tx.ExecContext(ctx, updateQuery, notificationID, userID)
+	if err != nil {
+		tx.Rollback()
+		return err
+	}
+
+	// Delete the notification from notifications table
+	deleteQuery := `
+		DELETE FROM notifications
+		WHERE notification_id = $1
+	`
+
+	_, err = tx.ExecContext(ctx, deleteQuery, notificationID)
+	if err != nil {
+		tx.Rollback()
+		return err
+	}
+
+	// Commit the transaction
+	return tx.Commit()
+}
+
 // GetUserAllNotifications retrieves all notifications for a given user ID,
 // sorted by coin symbol for easier review
 func (d Data) GetUserAllNotifications(userID int64) ([]Notification, error) {

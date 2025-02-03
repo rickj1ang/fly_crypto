@@ -10,8 +10,8 @@ import (
 
 // App holds application-wide dependencies
 type App struct {
-	Data  *data.Data
-	Coins []string
+	Data         *data.Data
+	SupportCoins []string
 }
 
 // NewApp creates a new App instance with database connections
@@ -34,7 +34,8 @@ func NewApp(dbURI, redisURI string) (*App, error) {
 	data := data.NewData(db, redisClient)
 
 	return &App{
-		Data: data,
+		Data:         data,
+		SupportCoins: []string{"BTC", "ETH", "SOL"},
 	}, nil
 }
 
