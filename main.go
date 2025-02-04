@@ -7,6 +7,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/rickj1ang/fly_crypto/api"
 	"github.com/rickj1ang/fly_crypto/internal/app"
+	baapi "github.com/rickj1ang/fly_crypto/internal/ba_api"
 	"github.com/rickj1ang/fly_crypto/internal/checker"
 	"github.com/rickj1ang/fly_crypto/internal/mail"
 )
@@ -40,6 +41,7 @@ func setupHealthCheck(r *gin.Engine) {
 func setupAuthRoutes(r *gin.Engine, app *app.App) {
 	r.POST("/login", api.Login(app))
 	r.POST("/verify", api.Verify(app))
+	r.GET("/getprices", api.GetPrices(app))
 }
 
 // setupProtectedRoutes configures routes that require authentication
@@ -60,6 +62,8 @@ func main() {
 		log.Fatalf("Failed to initialize app: %v", err)
 	}
 	defer app.Close()
+	baapi.InitPrice(app.SupportCoins, app.CoinsPrices)
+	go baapi.PriceUpdater(app.SupportCoins, app.CoinsPrices)
 
 	// Initialize Gin router
 	r := gin.Default()

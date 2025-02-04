@@ -2,6 +2,7 @@ package app
 
 import (
 	"database/sql"
+	"sync"
 
 	"github.com/go-redis/redis/v8"
 	_ "github.com/lib/pq"
@@ -12,6 +13,7 @@ import (
 type App struct {
 	Data         *data.Data
 	SupportCoins []string
+	CoinsPrices  *sync.Map
 }
 
 // NewApp creates a new App instance with database connections
@@ -33,9 +35,12 @@ func NewApp(dbURI, redisURI string) (*App, error) {
 	// Create new Data instance
 	data := data.NewData(db, redisClient)
 
+	var m sync.Map
+
 	return &App{
 		Data:         data,
 		SupportCoins: []string{"BTC", "ETH", "SOL"},
+		CoinsPrices:  &m,
 	}, nil
 }
 

@@ -35,11 +35,7 @@ func CreateNotification(a *app.App) gin.HandlerFunc {
 		}
 
 		// Get current price
-		currentPrice, err := baapi.GetPrice(coinSymbol)
-		if err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to get current price"})
-			return
-		}
+		currentPrice := baapi.GetPrice(coinSymbol, a.CoinsPrices)
 
 		// Create notification using the data package struct
 		notification := &data.Notification{

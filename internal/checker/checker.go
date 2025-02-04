@@ -1,6 +1,7 @@
 package checker
 
 import (
+	"sync"
 	"time"
 
 	"github.com/go-redis/redis/v8"
@@ -10,22 +11,16 @@ import (
 	"github.com/rickj1ang/fly_crypto/internal/mail"
 )
 
-func isAbove(targetPrice float64, coinSymbol string) (bool, error) {
-	currentPrice, err := baapi.GetPrice(coinSymbol)
-	if err != nil {
-		return false, err
-	}
+func isAbove(targetPrice float64, coinSymbol string, prices *sync.Map) bool {
+	currentPrice := baapi.GetPrice(coinSymbol, prices)
 
-	return targetPrice <= currentPrice, nil
+	return targetPrice <= currentPrice
 }
 
-func isBelow(targetPrice float64, coinSymbol string) (bool, error) {
-	currentPrice, err := baapi.GetPrice(coinSymbol)
-	if err != nil {
-		return false, err
-	}
+func isBelow(targetPrice float64, coinSymbol string, prices *sync.Map) bool {
+	currentPrice := baapi.GetPrice(coinSymbol, prices)
 
-	return targetPrice >= currentPrice, nil
+	return targetPrice >= currentPrice
 }
 
 func checkAbove(app *app.App, coinSymbol string) bool {
@@ -37,10 +32,7 @@ func checkAbove(app *app.App, coinSymbol string) bool {
 		}
 		return false
 	}
-	res, err := isAbove(minFromAbove, coinSymbol)
-	if err != nil {
-		panic(err)
-	}
+	res := isAbove(minFromAbove, coinSymbol, app.CoinsPrices)
 
 	return res
 }
@@ -54,10 +46,7 @@ func checkBelow(app *app.App, coinSymbol string) bool {
 		}
 		return false
 	}
-	res, err := isBelow(maxFromAbove, coinSymbol)
-	if err != nil {
-		panic(err)
-	}
+	res := isBelow(maxFromAbove, coinSymbol, app.CoinsPrices)
 
 	return res
 }
@@ -107,13 +96,17 @@ func StartCheck(app *app.App, box chan mail.Message) {
 }
 
 func checkOneCoin(app *app.App, coinSymbol string, box chan mail.Message) {
+	ticker := time.NewTicker(5 * time.Second)
+	defer ticker.Stop()
 	for {
-		if checkAbove(app, coinSymbol) {
-			sendAbove(app, coinSymbol, box)
+		select {
+		case <-ticker.C:
+			if checkAbove(app, coinSymbol) {
+				sendAbove(app, coinSymbol, box)
+			}
+			if checkBelow(app, coinSymbol) {
+				sendBelow(app, coinSymbol, box)
+			}
 		}
-		if checkBelow(app, coinSymbol) {
-			sendBelow(app, coinSymbol, box)
-		}
-		time.Sleep(5 * time.Second)
 	}
 }
