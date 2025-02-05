@@ -68,6 +68,9 @@ func main() {
 	// Initialize Gin router
 	r := gin.Default()
 
+	// Add CORS middleware
+	r.Use(api.CORSMiddleware())
+
 	// Setup routes
 	setupHealthCheck(r)
 	setupAuthRoutes(r, app)
@@ -79,7 +82,7 @@ func main() {
 	checker.StartCheck(app, mailBox)
 
 	// Start server
-	if err := r.Run("localhost:8080"); err != nil {
+	if err := r.Run(":80"); err != nil {
 		log.Fatalf("Server failed to start: %v", err)
 	}
 }

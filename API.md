@@ -59,6 +59,26 @@ Verify email with the received code to get an authentication token.
 }
 ```
 
+### Price Information
+
+#### GET /getprices
+Get current prices for all supported cryptocurrencies.
+
+**Response**
+```json
+{
+    "prices": {
+        "BTC": 50000.00,
+        "ETH": 3000.00,
+        "SOL": 100.00
+    }
+}
+```
+
+**Notes**
+- Returns real-time prices for BTC, ETH, and SOL in USDT
+- Prices are updated every 5 seconds
+
 ### Notifications (Protected Endpoints)
 
 #### POST /notifications
@@ -118,7 +138,7 @@ Authorization: Bearer <your_token>
 }
 ```
 
-#### DELETE /notifications/:id
+#### DELETE /notifications/{id}
 Delete a specific notification.
 
 **Headers**
@@ -127,7 +147,7 @@ Authorization: Bearer <your_token>
 ```
 
 **Parameters**
-- `id`: Notification ID to delete
+- `id`: Notification ID (in URL)
 
 **Response**
 ```json
