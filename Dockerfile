@@ -1,37 +1,31 @@
 # Build stage
-FROM golang:1.20-alpine AS builder
+FROM golang:1.23 AS builder
 
 WORKDIR /app
 
 COPY go.mod go.sum ./
-
-# 添加构建依赖
-RUN apk add --no-cache gcc musl-dev
-
-# Download dependencies
 RUN go mod download
 
 COPY . .
 
-# Build the application
 RUN CGO_ENABLED=0 GOOS=linux go build -o main .
 
 # Final stage
-FROM alpine:latest
+FROM ubuntu:20.04
 
 WORKDIR /app
 
-# 添加 CA 证书，用于 HTTPS 请求
-RUN apk add --no-cache ca-certificates
+# 安装 CA 证书
+RUN apt-get update && \
+    apt-get install -y ca-certificates && \
+    rm -rf /var/lib/apt/lists/*
 
-# 添加非 root 用户
-RUN adduser -D appuser
+# 创建非 root 用户
+RUN useradd -r -u 1001 -g root appuser
 USER appuser
 
 COPY --from=builder /app/main .
-COPY --from=builder /app/migrations ./migrations
 
-# 添加环境变量
 ENV PORT=80
 ENV GIN_MODE=release
 
